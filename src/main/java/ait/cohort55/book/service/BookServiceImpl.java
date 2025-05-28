@@ -69,7 +69,7 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     @Override
     public Iterable<BookDto> findAllBooksByAuthor(String authorName) {
-        return bookRepository.findAllBooksByAuthorsIgnoreCase(authorName)
+        return bookRepository.findBookByAuthorsNameIgnoreCase(authorName)
                 .map(book -> modelMapper.map(book, BookDto.class))
                 .toList();
     }
@@ -77,8 +77,8 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     @Override
     public Iterable<BookDto> findAllBooksByPublisher(String publisherName) {
-        return bookRepository.findAllBooksByPublisherIgnoreCase(publisherName)
-                .map(book -> modelMapper.map(book, BookDto.class))
+        return bookRepository.findBookByPublisherPublisherName(publisherName)
+                .map(b -> modelMapper.map(b, BookDto.class))
                 .toList();
     }
 
@@ -94,22 +94,33 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     @Override
     public Iterable<String> findPublisherByAuthor(String authorName) {
-        return bookRepository.findAllBooksByAuthorsIgnoreCase(authorName)
-                .map(book -> book.getPublisher().getPublisherName())
-                .toList();
+        return publisherRepository.findPublishersByAuthor(authorName);
+
     }
 
     @Transactional
     @Override
     public AuthorDto deleteAuthor(String authorName) {
         Author author = authorRepository.findById(authorName).orElseThrow(NotFoundException::new);
-        Set<Book> books = bookRepository.findAll().stream()
-                .filter(b -> b.getAuthors().contains(author))
-                .collect(Collectors.toSet());
-        books.forEach(b -> { b.getAuthors().remove(author);
-        bookRepository.save(b);
-        });
+        bookRepository.deleteBookByAuthorsNameIgnoreCase(authorName);
         authorRepository.delete(author);
         return modelMapper.map(author, AuthorDto.class);
+
+        //  #1
+//        bookRepository.findBookByAuthorsNameIgnoreCase(authorName)
+//                        .forEach(b -> bookRepository.delete(b));
+//        authorRepository.delete(author);
+//        return modelMapper.map(author, AuthorDto.class);
+
+
+        // #2
+//        Set<Book> books = bookRepository.findAll().stream()
+//                .filter(b -> b.getAuthors().contains(author))
+//                .collect(Collectors.toSet());
+//        books.forEach(b -> { b.getAuthors().remove(author);
+//        bookRepository.save(b);
+//        });
+//        authorRepository.delete(author);
+//        return modelMapper.map(author, AuthorDto.class);
     }
 }

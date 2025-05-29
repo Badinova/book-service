@@ -66,23 +66,22 @@ public class BookServiceImpl implements BookService {
         return modelMapper.map(book, BookDto.class);
     }
 
-    @Transactional(readOnly = true)
     @Override
     public Iterable<BookDto> findAllBooksByAuthor(String authorName) {
-        return bookRepository.findBookByAuthorsNameIgnoreCase(authorName)
+        Author author = authorRepository.findById(authorName).orElseThrow(NotFoundException::new);
+        return author.getBooks().stream()
                 .map(book -> modelMapper.map(book, BookDto.class))
                 .toList();
     }
 
-    @Transactional(readOnly = true)
     @Override
     public Iterable<BookDto> findAllBooksByPublisher(String publisherName) {
-        return bookRepository.findBookByPublisherPublisherName(publisherName)
+        Publisher publisher = publisherRepository.findById(publisherName).orElseThrow(NotFoundException::new);
+        return publisher.getBooks().stream()
                 .map(b -> modelMapper.map(b, BookDto.class))
                 .toList();
     }
 
-    @Transactional(readOnly = true)
     @Override
     public Iterable<AuthorDto> findBookAuthors(String isbn) {
         Book book = bookRepository.findById(isbn).orElseThrow(NotFoundException::new);
@@ -94,7 +93,9 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     @Override
     public Iterable<String> findPublisherByAuthor(String authorName) {
-        return publisherRepository.findPublishersByAuthor(authorName);
+        return publisherRepository.findDistinctPublisherByBooksAuthorsNameIgnoreCase(authorName)
+                .map(Publisher::getPublisherName)
+                .toList();
 
     }
 
@@ -102,7 +103,6 @@ public class BookServiceImpl implements BookService {
     @Override
     public AuthorDto deleteAuthor(String authorName) {
         Author author = authorRepository.findById(authorName).orElseThrow(NotFoundException::new);
-        bookRepository.deleteBookByAuthorsNameIgnoreCase(authorName);
         authorRepository.delete(author);
         return modelMapper.map(author, AuthorDto.class);
 
